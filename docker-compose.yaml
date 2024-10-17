@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # Kafka controllers (KRaft mode)
+  kafka-controller-1:
+    build: .
+    container_name: kafka-controller-1
+    hostname: kafka-controller-1
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.2
+    ports:
+      - "2221:22"       # SSH
+      - "19092:9092"
+      - "19093:9093"
+
+  kafka-controller-2:
+    build: .
+    container_name: kafka-controller-2
+    hostname: kafka-controller-2
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.3
+    ports:
+      - "2222:22"       # SSH
+      - "29092:9092"
+      - "29093:9093"
+
+  kafka-controller-3:
+    build: .
+    container_name: kafka-controller-3
+    hostname: kafka-controller-3
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.4
+    ports:
+      - "2223:22"       # SSH
+      - "39092:9092"
+      - "39093:9093"
+
+  kafka-controller-3-migrated:
+    build: .
+    container_name: kafka-controller-3-migrated
+    hostname: kafka-controller-3-migrated
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.14
+    ports:
+      - "2224:22"       # SSH
+      - "49092:9092"
+      - "49093:9093"
+
+  # Kafka brokers
+  kafka-broker-1:
+    build: .
+    container_name: kafka-broker-1
+    hostname: kafka-broker-1
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.5
+    ports:
+      - "2231:22"       # SSH
+      - "9092:9092"
+      - "9101:9101"
+
+  # Schema Registry
+  schema-registry:
+    build: .
+    container_name: schema-registry
+    hostname: schema-registry
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.8
+    ports:
+      - "2241:22"       # SSH
+      - "8081:8081"     # Schema Registry listener
+
+  # Kafka REST Proxy
+  kafka-rest:
+    build: .
+    container_name: kafka-rest
+    hostname: kafka-rest
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.9
+    ports:
+      - "2251:22"       # SSH
+      - "8082:8082"     # REST Proxy listener
+
+  # KSQL servers
+  ksql-1:
+    build: .
+    container_name: ksql-1
+    hostname: ksql-1
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.10
+    ports:
+      - "2261:22"       # SSH
+      - "8088:8088"     # KSQL listener
+
+  # Kafka Connect
+  kafka-connect:
+    build: .
+    container_name: kafka-connect
+    hostname: kafka-connect
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.12
+    ports:
+      - "2271:22"       # SSH
+      - "8083:8083"     # Kafka Connect listener
+
+  # Control Center
+  control-center:
+    build: .
+    container_name: control-center
+    hostname: control-center
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      kafka_network:
+        ipv4_address: 172.21.0.13
+    ports:
+      - "2281:22"       # SSH
+      - "9021:9021"     # Control Center listener
+
+networks:
+  kafka_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

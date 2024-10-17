@@ -1,0 +1,215 @@
+---
+- name: Kafka Controller Migration
+  hosts: kafka_controller,kafka_broker
+  gather_facts: true
+  #tags: kafka_controller
+  vars:
+    kafka_controller_quorum_voters: "9991@kafka-controller-1:9093,9992@kafka-controller-2:9093,9993@kafka-controller-3-migrated:9093"
+  tasks:
+    #  override get_meta_properties.yml task from role kafka_controller in the galaxy collection cp-ansible. I'm calling the role kafka_controller  in my own playbook and would like to modify the behjavior of this specific task
+
+    - name: Log Quorum Status and Replica (Before Migration)
+      shell: |
+       kafka-metadata-quorum --bootstrap-server kafka-controller-1:9093 describe --status 
+       kafka-metadata-quorum --bootstrap-server kafka-controller-1:9093 describe --replica 
+      delegate_to: 'kafka-broker-1'
+      run_once: true
+      register: quorum_status_before 
+      tags: log_quorum_status
+
+    - name: Save Quorum Status and Replica Before Migration to Localhost in One Task
+      local_action:
+        module: copy
+        content: "{{ quorum_status_before.stdout }}"
+        dest: "quorum_status_before_migration.log"
+      tags: log_quorum_status
+
+    - name: Extract ClusterId from meta.properties on Existing Controller
+      slurp:
+        src: "{{ kafka_controller_final_properties['log.dirs'].split(',')[0] }}/meta.properties"
+      delegate_to: "{{ groups['kafka_controller'][0] }}"
+      register: existing_cluster
+      run_once: true
+      tags: extract_cluster_id
+
+    - name: Set ClusterId Fact
+      set_fact:
+       kafka_cluster_id: "{{ (existing_cluster['content'] | b64decode).partition('cluster.id=')[2].partition('\n')[0] }}"
+      when: existing_cluster is defined
+      tags: extract_cluster_id
+
+    #- name: Format Data Directory for Migrated Controller
+    #  shell: "{{ binary_base_path }}/bin/kafka-storage format -t={{ kafka_cluster_id }} -c {{ kafka_controller.config_file }} --ignore-formatted"
+    #  when: inventory_hostname == 'kafka-controller-3-migrated'
+    #  tags: extract_cluster_id
+
+
+    - name: Stop Old Controller
+      systemd:
+        name: "{{ kafka_controller_service_name }}"
+        state: stopped
+        daemon_reload: true
+      when: inventory_hostname == 'kafka-controller-3'
+      tags: complete_migration
+    
+    # - name: Remove kafka-controller-3 from kafka_controllers group
+    #   remove_host:
+    #     name: kafka-controller-3
+    #   tags: remove_host
+
+
+
+    - name: Install Kafka Controller on Migrated Controller
+      import_role:
+        name: confluent.platform.kafka_controller
+      when: inventory_hostname == 'kafka-controller-3-migrated'
+      tags: Install_Kafka_Controller
+
+    # - name: Format Data Directory for Migrated Controller (After Installation)
+    #   shell: "{{ binary_base_path }}/bin/kafka-storage format -t={{ kafka_cluster_id }} -c {{ kafka_controller.config_file }} --ignore-formatted"
+    #   when: inventory_hostname == 'kafka-controller-3-migrated'
+    #   tags: Install_Kafka_Controller
+
+    - name: verify kafka-controller-3-migrated has the same ClusterId
+      slurp:
+        src: "{{ kafka_controller_final_properties['log.dirs'].split(',')[0] }}/meta.properties"
+      delegate_to: kafka-controller-3-migrated
+      register: new_cluster
+      run_once: true
+      tags: Install_Kafka_Controller
+
+    - name: Compare ClusterId from new and existing controllers
+      assert:
+       that:
+        - kafka_cluster_id == (new_cluster['content'] | b64decode).partition('cluster.id=')[2].partition('\n')[0]
+       fail_msg: "Cluster ID mismatch between the new and existing controllers"
+       success_msg: "Cluster ID matches successfully between the new and existing controllers"
+      when: new_cluster is defined
+      tags: Install_Kafka_Controller  
+
+
+    - name: Update Controller Quorum Voters Configuration
+      lineinfile:
+        path: /etc/controller/server.properties
+        regexp: '^controller.quorum.voters='
+        line: 'controller.quorum.voters={{ kafka_controller_quorum_voters }}'
+      when: inventory_hostname in ['kafka-controller-1', 'kafka-controller-2']
+      tags: complete_migration
+
+    - name: Update Configuration for Broker
+      lineinfile:
+        path: /etc/kafka/server.properties
+        regexp: '^controller.quorum.voters='
+        line: 'controller.quorum.voters={{ kafka_controller_quorum_voters }}'
+      when: inventory_hostname == 'kafka-broker-1'
+      tags: complete_migration
+
+    - name: Restart Kafka Controllers
+      systemd:
+        name: "{{ kafka_controller_service_name }}"
+        state: restarted
+        daemon_reload: true
+      delegate_to: "{{ item }}"
+      loop: 
+        - kafka-controller-1
+        - kafka-controller-2
+        - kafka-controller-3-migrated
+      run_once: true
+      tags: test_restart
+
+    - name: Startup Delay for Kafka Controllers
+      wait_for:
+        timeout: "{{ kafka_controller_health_check_delay }}"
+      delegate_to: "{{ item }}"
+      loop:
+        - kafka-controller-1
+        - kafka-controller-2
+        - kafka-controller-3-migrated
+      run_once: true
+      tags: complete_migration
+
+    - name: Restart Kafka Broker
+      systemd:
+        name: "{{ kafka_broker_service_name }}"
+        state: restarted
+        daemon_reload: true
+      when: inventory_hostname == 'kafka-broker-1'
+      tags: complete_migration
+
+    - name: Startup Delay for Kafka Broker
+      wait_for:
+        timeout: 20
+      when: inventory_hostname == 'kafka-broker-1'
+      tags: complete_migration
+
+    - name: Verify Metadata Synchronization
+      command: >
+        kafka-metadata-quorum --bootstrap-server {{ inventory_hostname }}:9092 describe --status
+      register: metadata_status
+      when: inventory_hostname == 'kafka-broker-1'
+      tags: complete_migration
+
+    - name: Display Metadata Synchronization Output Nicely
+      debug:
+        msg: "{{ metadata_status.stdout }}"
+      when: metadata_status is defined and inventory_hostname == 'kafka-broker-1'
+      tags: complete_migration
+
+    - name: Log Quorum Status and Replica (After Migration)
+      shell: |
+       kafka-metadata-quorum --bootstrap-server kafka-controller-1:9093 describe --status 
+      
+      delegate_to: 'kafka-broker-1'
+      run_once: true
+      register: quorum_status_after
+      tags: log_quorum_status
+
+    - name: Save Quorum Status and Replica Before Migration to Localhost in One Task
+      local_action:
+        module: copy
+        content: "{{ quorum_status_after.stdout }}"
+        dest: "quorum_status_after_migration.log"
+      tags: log_quorum_status
+    
+    # - name: Describe Kafka Cluster Metadata and Log Results to Localhost
+    #   block:
+    #     - name: Use AdminClient to Describe Kafka Cluster
+    #       pip:
+    #         name: confluent-kafka
+    #         state: present
+    #         executable: python3
+    #       delegate_to: 'kafka-broker-1'
+    #       become: yes
+    #       run_once: true
+          
+    
+    #     - name: Run Python Script to Describe Cluster
+    #       delegate_to: 'kafka-broker-1'
+    #       vars:
+    #         kafka_script: |
+    #           from confluent_kafka.admin import AdminClient, KafkaException
+    #           a = AdminClient({'bootstrap.servers': 'kafka-controller-1:9093'})
+    #           future = a.describe_cluster()
+    #           try:
+    #               c = future.result()
+    #               with open('/tmp/kafka_cluster_metadata.log', 'w') as f:
+    #                   if c.controller:
+    #                       f.write(f"Controller: {c.controller}\n")
+    #                   else:
+    #                       f.write("No Controller Information Available\n")
+    #                   f.write("Nodes:\n")
+    #                   for node in c.nodes:
+    #                       f.write(f"  Node: {node}\n")
+    #           except KafkaException as e:
+    #               with open('/tmp/kafka_cluster_metadata.log', 'w') as f:
+    #                   f.write(f"Failed to describe cluster: {e}\n")
+    #       copy:
+    #         content: "{{ kafka_script }}"
+    #         dest: "/tmp/kafka_describe_script.py"
+    #       tags: describe_cluster_metadata
+
+    #     - name: Execute Cluster Metadata Script
+    #       command: "python3 /tmp/kafka_describe_script.py"
+    #       delegate_to: 'kafka-broker-1'
+    #       when: inventory_hostname == 'kafka-broker-1'
+    #       tags: describe_cluster_metadata

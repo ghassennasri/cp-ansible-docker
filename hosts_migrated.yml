@@ -1,0 +1,67 @@
+---
+all:
+  vars:
+    ansible_connection: ssh
+    ansible_user: root
+    ansible_become: true
+    ansible_host: localhost
+    ansible_ssh_private_key_file: id_rsa
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    
+
+
+  children:
+    kafka_controller:
+      hosts:
+        kafka-controller-1:
+          
+          ansible_port: 2221
+        kafka-controller-2:
+          
+          ansible_port: 2222
+        kafka-controller-3:
+            
+            ansible_port: 2223
+        kafka-controller-3-migrated:
+          ansible_port: 2224
+          kafka_controller_custom_properties:
+            controller.quorum.voters: "9991@kafka-controller-1:9093,9992@kafka-controller-2:9093,9993@kafka-controller-3-migrated:9093"
+            node.id: 9993
+
+       
+
+    kafka_broker:
+      hosts:
+        kafka-broker-1:
+          
+          ansible_port: 2231
+
+    schema_registry:
+      hosts:
+        schema-registry:
+          
+          ansible_port: 2241
+
+    kafka_rest:
+      hosts:
+        kafka-rest:
+          
+          ansible_port: 2251
+
+    ksql:
+      hosts:
+        ksql-1:
+          
+          ansible_port: 2261
+
+    kafka_connect:
+      hosts:
+        kafka-connect:
+          
+          ansible_port: 2271
+
+    control_center:
+      hosts:
+        control-center:
+          
+          ansible_port: 2281

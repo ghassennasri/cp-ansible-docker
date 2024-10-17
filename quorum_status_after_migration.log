@@ -1,0 +1,8 @@
+ClusterId:              gKP1yNTvTvqf4ICEYzpYsg
+LeaderId:               9991
+LeaderEpoch:            5
+HighWatermark:          5346
+MaxFollowerLag:         0
+MaxFollowerLagTimeMs:   0
+CurrentVoters:          [9991,9992,9993]
+CurrentObservers:       [1]

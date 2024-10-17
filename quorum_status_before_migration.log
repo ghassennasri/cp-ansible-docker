@@ -1,0 +1,13 @@
+ClusterId:              gKP1yNTvTvqf4ICEYzpYsg
+LeaderId:               9991
+LeaderEpoch:            1
+HighWatermark:          3145
+MaxFollowerLag:         0
+MaxFollowerLagTimeMs:   0
+CurrentVoters:          [9991,9992,9993]
+CurrentObservers:       [1]
+NodeId	LogEndOffset	Lag	LastFetchTimestamp	LastCaughtUpTimestamp	Status  	
+9991  	3148        	0  	1729175321104     	1729175321104        	Leader  	
+9992  	3148        	0  	1729175320937     	1729175320937        	Follower	
+9993  	3148        	0  	1729175320937     	1729175320937        	Follower	
+1     	3148        	0  	1729175320936     	1729175320936        	Observer	

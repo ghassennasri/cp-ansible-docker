@@ -1,0 +1,10 @@
+/.venv
+/.vscode
+/artifacts
+/callback_plugins
+/debug_playbook.yaml
+/inventory
+/kafka_describe_script.py
+/roles
+/run-migration-playbook.py
+/trash.txt
