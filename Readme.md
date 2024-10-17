@@ -119,6 +119,39 @@ The `controller3_migration.yml` playbook performs the following:
 - **`quorum_status_before_migration.log`**: Quorum status before migration.
 - **`quorum_status_after_migration.log`**: Quorum status after migration.
 
+**`quorum_status_before_migration.log`**
+```text
+ClusterId:              gKP1yNTvTvqf4ICEYzpYsg
+LeaderId:               9991
+LeaderEpoch:            1
+HighWatermark:          3145
+MaxFollowerLag:         0
+MaxFollowerLagTimeMs:   0
+CurrentVoters:          [9991,9992,9993]
+CurrentObservers:       [1]
+NodeId	LogEndOffset	Lag	LastFetchTimestamp	LastCaughtUpTimestamp	Status  	
+9991  	3148        	0  	1729175321104     	1729175321104        	Leader  	
+9992  	3148        	0  	1729175320937     	1729175320937        	Follower	
+9993  	3148        	0  	1729175320937     	1729175320937        	Follower	
+1     	3148        	0  	1729175320936     	1729175320936        	Observer	
+```
+**`quorum_status_after_migration.log`**
+```text
+ClusterId:              gKP1yNTvTvqf4ICEYzpYsg
+LeaderId:               9991
+LeaderEpoch:            5
+HighWatermark:          5346
+MaxFollowerLag:         0
+MaxFollowerLagTimeMs:   0
+CurrentVoters:          [9991,9992,9993]
+CurrentObservers:       [1]
+NodeId  LogEndOffset    Lag     LastFetchTimestamp      LastCaughtUpTimestamp   Status  
+9991    9140            0       1729177586946           1729177586946           Leader  
+9992    9140            0       1729177586699           1729177586699           Follower
+9993    9140            0       1729177586698           1729177586698           Follower
+1       9140            0       1729177586698           1729177586698           Observer
+```
+
 ### 
 
 <details>
@@ -4078,39 +4111,6 @@ Migration Playbook ran successfully!</pre>
 </details>
 
 
-
-**`quorum_status_before_migration.log`**
-```text
-ClusterId:              gKP1yNTvTvqf4ICEYzpYsg
-LeaderId:               9991
-LeaderEpoch:            1
-HighWatermark:          3145
-MaxFollowerLag:         0
-MaxFollowerLagTimeMs:   0
-CurrentVoters:          [9991,9992,9993]
-CurrentObservers:       [1]
-NodeId	LogEndOffset	Lag	LastFetchTimestamp	LastCaughtUpTimestamp	Status  	
-9991  	3148        	0  	1729175321104     	1729175321104        	Leader  	
-9992  	3148        	0  	1729175320937     	1729175320937        	Follower	
-9993  	3148        	0  	1729175320937     	1729175320937        	Follower	
-1     	3148        	0  	1729175320936     	1729175320936        	Observer	
-```
-**`quorum_status_after_migration.log`**
-```text
-ClusterId:              gKP1yNTvTvqf4ICEYzpYsg
-LeaderId:               9991
-LeaderEpoch:            5
-HighWatermark:          5346
-MaxFollowerLag:         0
-MaxFollowerLagTimeMs:   0
-CurrentVoters:          [9991,9992,9993]
-CurrentObservers:       [1]
-NodeId  LogEndOffset    Lag     LastFetchTimestamp      LastCaughtUpTimestamp   Status  
-9991    9140            0       1729177586946           1729177586946           Leader  
-9992    9140            0       1729177586699           1729177586699           Follower
-9993    9140            0       1729177586698           1729177586698           Follower
-1       9140            0       1729177586698           1729177586698           Observer
-```
 ## Cleanup
 To stop all services:
 ```bash
