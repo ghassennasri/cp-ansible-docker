@@ -119,9 +119,13 @@ The `controller3_migration.yml` playbook performs the following:
 - **`quorum_status_before_migration.log`**: Quorum status before migration.
 - **`quorum_status_after_migration.log`**: Quorum status after migration.
 
-#### output example
-<div style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
-<pre>
+### 
+
+<details>
+  <summary>
+    <b>Output example (Click to unfold)</b>
+  </summary>
+  <pre>
 Download the Confluent Platform collection from Ansible Galaxy...
 Starting galaxy collection install process
 Nothing to do. All requested collections are already installed. If you want to reinstall them, consider using `--force`.
@@ -4070,9 +4074,9 @@ kafka-controller-2         : ok=6    changed=3    unreachable=0    failed=0    s
 kafka-controller-3         : ok=6    changed=1    unreachable=0    failed=0    skipped=47   rescued=0    ignored=0   
 kafka-controller-3-migrated : ok=77   changed=31   unreachable=0    failed=0    skipped=60   rescued=0    ignored=0   
 
-Migration Playbook ran successfully!
-</pre>
-</div>
+Migration Playbook ran successfully!</pre>
+</details>
+
 
 
 **`quorum_status_before_migration.log`**
